@@ -1,0 +1,54 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.2.0
+    hooks:
+    #-   id: check-added-large-files
+    -   id: fix-byte-order-marker
+    -   id: check-case-conflict
+    -   id: check-json
+    -   id: check-yaml
+        exclude: '^charts/'
+        args: ['--unsafe']
+    -   id: detect-aws-credentials
+        args: [--allow-missing-credentials]
+    -   id: detect-private-key
+    -   id: end-of-file-fixer
+    -   id: mixed-line-ending
+    -   id: trailing-whitespace
+-   repo: https://github.com/asottile/add-trailing-comma
+    rev: v2.2.2
+    hooks:
+    -   id: add-trailing-comma
+-   repo: https://github.com/pycqa/isort
+    rev: 5.10.1
+    hooks:
+    -   id: isort
+        name: isort (python)
+        args: [--settings-path=pyproject.toml]
+    -   id: isort
+        name: isort (cython)
+        types: [cython]
+    -   id: isort
+        name: isort (pyi)
+        types: [pyi]
+-   repo: https://github.com/psf/black
+    rev: 22.3.0
+    hooks:
+    -   id: black
+        args: [--config=pyproject.toml]
+-   repo: https://gitlab.com/pycqa/flake8
+    rev: 4.0.1
+    hooks:
+    -   id: flake8
+        args: [--ignore, "E203", --max-line-length, "79"]
+-   repo: https://github.com/kynan/nbstripout
+    rev: 0.5.0
+    hooks:
+    -   id: nbstripout
+-   repo: https://github.com/asottile/pyupgrade
+    rev: v2.32.0
+    hooks:
+    -   id: pyupgrade
+        args: [--py36-plus]
