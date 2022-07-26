@@ -15,11 +15,14 @@ from melspec import plot_colored_polar
 from record_audio import sound
 
 # load models
-model = load_model("model3.h5")
+model_gender = load_model("models/model_gender.h5")
+model_mfcc_BIG3 = load_model("models/model_mfcc_BIG3.h5")
+model_mfcc_BIG7 = load_model("models/model_mfcc_BIG7.h5")
+model_mel = load_model("models/model_mel.h5")
 
 # constants
 starttime = datetime.now()
-TEST_FILE = "examples//03-01-02-02-02-01-03.wav"
+TEST_FILE = "examples//03-02-05-02-02-02-02.wav"
 
 CAT6 = ["fear", "angry", "neutral", "happy", "sad", "surprise"]
 CAT7 = ["fear", "disgust", "neutral", "happy", "sad", "surprise", "angry"]
@@ -193,10 +196,20 @@ def plot_polar(
 
 
 def main():
+    st.markdown(
+        '<h6 align="center">TT monthly challenge 2nd - July 2022</h6>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<h1 align="center">Speech Emotion Analysis</h1>',
+        unsafe_allow_html=True,
+    )
+
     side_img = Image.open("images/emotion3.jpg")
     with st.sidebar:
         st.image(side_img, width=300)
     st.sidebar.subheader("Menu")
+
     website_menu = st.sidebar.selectbox(
         "Detect emotion from:",
         (
@@ -207,8 +220,6 @@ def main():
     st.set_option("deprecation.showfileUploaderEncoding", False)
 
     if website_menu == "An audio file":
-        em3 = em6 = em7 = gender = False
-        st.sidebar.subheader("Settings")
 
         st.markdown("## Upload the file")
         with st.container():
@@ -255,48 +266,11 @@ def main():
                 else:
                     pass
 
-        # model_type = "mfccs"
-        em3 = st.sidebar.checkbox("3 emotions", True)
-        em6 = st.sidebar.checkbox("6 emotions (recommended)", True)
-        em7 = st.sidebar.checkbox("7 emotions")
-        gender = st.sidebar.checkbox("gender", True)
+        [mfccs_fea, mel_fea, gender] = check_box_setting()
 
         if audio_file is not None:
-            st.markdown("## Analyzing...")
-            if not audio_file == "test":
-                st.sidebar.subheader("Audio file")
-                file_details = {
-                    "Filename": audio_file.name,
-                    "FileSize": audio_file.size,
-                }
-                st.sidebar.write(file_details)
-            with st.container():
-                mfccs_features, mel_log_features = st.columns(2)
-                with mfccs_features:
-                    display_mfccs_features(mfccs, sr)
-
-                with mel_log_features:
-                    display_mel_log_features(Xdb, sr)
-
-            st.markdown("## Predictions")
-            with st.container():
-                col1, col2, col3, col4 = st.columns(4)
-                mfccs = get_mfccs(path, model.input_shape[-1])
-                mfccs = mfccs.reshape(1, *mfccs.shape)
-                pred = model.predict(mfccs)[0]
-
-                with col1:
-                    if em3:
-                        process_em3(pred)
-                with col2:
-                    if em6:
-                        process_em6(pred)
-                with col3:
-                    if em7:
-                        process_em7(pred, path)
-                with col4:
-                    if gender:
-                        process_gender(path)
+            display_analysis(audio_file, mfccs, Xdb, sr)
+            display_prediction(path, mfccs_fea, mel_fea, gender)
 
     elif website_menu == "Your recording":
         st.write("Record audio file")
@@ -307,13 +281,7 @@ def main():
                 sound.record(path)
             st.success("Recording completed")
 
-        em3 = em6 = em7 = gender = False
-        st.sidebar.subheader("Settings")
-        # model_type = "mfccs"
-        em3 = st.sidebar.checkbox("3 emotions", True)
-        em6 = st.sidebar.checkbox("6 emotions (recommended)", True)
-        em7 = st.sidebar.checkbox("7 emotions")
-        gender = st.sidebar.checkbox("gender", True)
+        [mfccs_fea, mel_fea, gender] = check_box_setting()
 
         audio_file = None
         try:
@@ -334,40 +302,66 @@ def main():
                 with wave_form:
                     display_wave_form(wav)
 
-            st.markdown("## Analyzing...")
-            st.sidebar.subheader("Audio file")
-            file_details = {
-                "Filename": audio_file.name,
-                # "FileSize": audio_file.size,
-            }
-            st.sidebar.write(file_details)
-            with st.container():
-                mfccs_features, mel_log_features = st.columns(2)
-                with mfccs_features:
-                    display_mfccs_features(mfccs, sr)
+            display_analysis(audio_file, mfccs, Xdb, sr)
+            display_prediction(path, mfccs_fea, mel_fea, gender)
 
-                with mel_log_features:
-                    display_mel_log_features(Xdb, sr)
 
-            st.markdown("## Predictions")
-            with st.container():
-                col1, col2, col3, col4 = st.columns(4)
-                mfccs = get_mfccs(path, model.input_shape[-1])
-                mfccs = mfccs.reshape(1, *mfccs.shape)
-                pred = model.predict(mfccs)[0]
+def check_box_setting():
+    mfccs_fea = mel_fea = gender = False
+    st.sidebar.subheader("Select features:")
+    mfccs_fea = st.sidebar.checkbox("MFCCs", True)
+    mel_fea = st.sidebar.checkbox("Mel-Spectrogram (take a while)", True)
+    gender = st.sidebar.checkbox("Gender", True)
+    return [mfccs_fea, mel_fea, gender]
 
+
+def display_prediction(path, mfccs_fea, mel_fea, gender):
+    st.markdown("## Predictions")
+    with st.container():
+        if mfccs_fea:
+            mfccs = get_mfccs(path, model_mfcc_BIG3.input_shape[-1])
+            mfccs = mfccs.reshape(1, *mfccs.shape)
+            pred = model_mfcc_BIG3.predict(mfccs)[0]
+
+            col1, col2, col3 = st.columns(3)
             with col1:
-                if em3:
-                    process_em3(pred)
+                process_em3(pred)
             with col2:
-                if em6:
-                    process_em6(pred)
+                process_em7(path)
             with col3:
-                if em7:
-                    process_em7(pred, path)
-            with col4:
                 if gender:
                     process_gender(path)
+
+            if mel_fea:
+                col1, col2 = st.columns([2, 1])
+                with col1:
+                    process_mel_log(path)
+
+        elif mel_fea:
+            col1, col2 = st.columns([2, 1])
+            with col1:
+                process_mel_log(path)
+            with col2:
+                if gender:
+                    process_gender(path)
+
+
+def display_analysis(audio_file, mfccs, Xdb, sr):
+    st.markdown("## Analyzing...")
+    if not audio_file == "test":
+        st.sidebar.subheader("Audio file")
+        file_details = {
+            "Filename": audio_file.name,
+            # "FileSize": audio_file.size,
+        }
+        st.sidebar.write(file_details)
+    with st.container():
+        mfccs_features, mel_log_features = st.columns(2)
+        with mfccs_features:
+            display_mfccs_features(mfccs, sr)
+
+        with mel_log_features:
+            display_mel_log_features(Xdb, sr)
 
 
 def display_wave_form(wav):
@@ -441,11 +435,10 @@ def process_em6(pred):
     st.write(fig2)
 
 
-def process_em7(pred, path):
-    model_ = load_model("model4.h5")
-    mfccs_ = get_mfccs(path, model_.input_shape[-2])
+def process_em7(path):
+    mfccs_ = get_mfccs(path, model_mfcc_BIG7.input_shape[-2])
     mfccs_ = mfccs_.T.reshape(1, *mfccs_.T.shape)
-    pred_ = model_.predict(mfccs_)[0]
+    pred_ = model_mfcc_BIG7.predict(mfccs_)[0]
     txt = "MFCCs\n" + get_title(pred_, CAT7)
     fig3 = plt.figure(figsize=(5, 5))
     COLORS = color_dict(COLOR_DICT)
@@ -460,12 +453,23 @@ def process_em7(pred, path):
     st.write(fig3)
 
 
+def process_mel_log(path):
+
+    mel = get_melspec(path)[0]
+    mel = mel.reshape(1, *mel.shape)
+    tpred = model_mel.predict(mel)[0]
+    txt = "MEL-SPECTROGRAMS \n" + get_title(tpred)
+    fig = plt.figure(figsize=(10, 4))
+    print("plot mel-spectrogram")
+    plot_emotions(data6=tpred, fig=fig, title=txt)
+    st.write(fig)
+
+
 def process_gender(path):
     with st.spinner("Wait for it..."):
-        gmodel = load_model("model_mw.h5")
-        gmfccs = get_mfccs(path, gmodel.input_shape[-1])
+        gmfccs = get_mfccs(path, model_gender.input_shape[-1])
         gmfccs = gmfccs.reshape(1, *gmfccs.shape)
-        gpred = gmodel.predict(gmfccs)[0]
+        gpred = model_gender.predict(gmfccs)[0]
         gdict = [["female", "woman.png"], ["male", "man.png"]]
         ind = gpred.argmax()
         txt = "Predicted gender: " + gdict[ind][0]
@@ -477,6 +481,92 @@ def process_gender(path):
         plt.imshow(img)
         plt.axis("off")
         st.write(fig4)
+
+
+def plot_emotions(
+    fig,
+    data6,
+    data3=None,
+    title="Detected emotion",
+    categories6=CAT6,
+    categories3=CAT3,
+    color_dict=COLOR_DICT,
+):
+
+    if data3 is None:
+        pos = data6[3]
+        neu = data6[2] + data6[5]
+        neg = data6[0] + data6[1] + data6[4]
+        data3 = np.array([pos, neu, neg])
+
+    ind = categories6[data6.argmax()]
+    color6 = color_dict[ind]
+
+    # parameters for sector highlighting #6
+    theta6 = np.linspace(0.0, 2 * np.pi, data6.shape[0], endpoint=False)
+    radii6 = np.zeros_like(data6)
+    radii6[data6.argmax()] = data6.max() * 10
+    width6 = np.pi / 1.8 * data6
+
+    data6 = list(data6)
+    n = len(data6)
+    data6 += data6[:1]
+    angles6 = [i / float(n) * 2 * np.pi for i in range(n)]
+    angles6 += angles6[:1]
+
+    ind = categories3[data3.argmax()]
+    color3 = color_dict[ind]
+
+    # parameters for sector highlighting #3
+    theta3 = np.linspace(0.0, 2 * np.pi, data3.shape[0], endpoint=False)
+    radii3 = np.zeros_like(data3)
+    radii3[data3.argmax()] = data3.max() * 10
+    width3 = np.pi / 1.8 * data3
+
+    data3 = list(data3)
+    n = len(data3)
+    data3 += data3[:1]
+    angles3 = [i / float(n) * 2 * np.pi for i in range(n)]
+    angles3 += angles3[:1]
+
+    # fig = plt.figure(figsize=(10, 4))
+    fig.set_facecolor("#d1d1e0")
+
+    ax = plt.subplot(122, polar="True")
+    plt.polar(angles6, data6, color=color6)
+    plt.fill(angles6, data6, facecolor=color6, alpha=0.25)
+    ax.bar(theta6, radii6, width=width6, bottom=0.0, color=color6, alpha=0.25)
+    ax.spines["polar"].set_color("lightgrey")
+    ax.set_theta_offset(np.pi / 3)
+    ax.set_theta_direction(-1)
+    plt.xticks(angles6[:-1], categories6)
+    ax.set_rlabel_position(0)
+    plt.yticks([0, 0.25, 0.5, 0.75, 1], color="grey", size=8)
+    plt.title("BIG 6", color=color6)
+    plt.ylim(0, 1)
+
+    ax = plt.subplot(121, polar="True")
+    # ax.set_facecolor('#d1d1e0')
+    plt.polar(
+        angles3,
+        data3,
+        color=color3,
+        linewidth=2,
+        linestyle="--",
+        alpha=0.8,
+    )
+    plt.fill(angles3, data3, facecolor=color3, alpha=0.25)
+    ax.bar(theta3, radii3, width=width3, bottom=0.0, color=color3, alpha=0.25)
+    ax.spines["polar"].set_color("lightgrey")
+    ax.set_theta_offset(np.pi / 6)
+    ax.set_theta_direction(-1)
+    plt.xticks(angles3[:-1], categories3)
+    ax.set_rlabel_position(0)
+    plt.yticks([0, 0.25, 0.5, 0.75, 1], color="grey", size=8)
+    plt.title("BIG 3", color=color3)
+    plt.ylim(0, 1)
+    plt.suptitle(title, color="darkblue", size=12)
+    plt.subplots_adjust(top=0.75)
 
 
 if __name__ == "__main__":

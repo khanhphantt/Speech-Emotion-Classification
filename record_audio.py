@@ -22,7 +22,7 @@ class Sound:
         self.device = INPUT_DEVICE
         self.frames = []
         self.audio = pyaudio.PyAudio()
-        self.device_info()
+        # self.device_info()
         print("Audio device configurations currently used")
         print(f"Default input device index = {self.device}")
         print(f"Max input channels = {self.channels}")
@@ -30,18 +30,11 @@ class Sound:
 
     def device_info(self):
         num_devices = self.audio.get_device_count()
-        keys = ["name", "index", "maxInputChannels", "defaultSampleRate"]
+        # keys = ["name", "index", "maxInputChannels", "defaultSampleRate"]
         print("List of System's Audio Devices configurations:")
         print(f"Number of audio devices: {num_devices}")
-        for i in range(num_devices):
-            info_dict = self.audio.get_device_info_by_index(i)
-            print(
-                [
-                    (key, value)
-                    for key, value in info_dict.items()
-                    if key in keys
-                ],
-            )
+        # for i in range(num_devices):
+        #    info_dict = self.audio.get_device_info_by_index(i)
 
     def record(self, path):
         # start Recording
