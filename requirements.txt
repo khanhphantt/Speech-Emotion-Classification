@@ -4,7 +4,7 @@ matplotlib
 Pillow==8.2.0
 opencv-python-headless==4.5.1.48
 plotly==4.14.3
-pyaudio
+PyAudio
 requests==2.25.1
 librosa==0.8.0
 streamlit
