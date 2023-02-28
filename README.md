@@ -16,6 +16,7 @@ Typically, the SER task is divided into two main sections: features selection an
 ![img](images/schema.png)
 1. DenseNet for mel-spectrograms features.
 2. CNN for mfccs features.
+https://towardsdatascience.com/classifying-emotions-using-audio-recordings-and-python-434e748a95eb
 
 For more detailed about EDA and ML models, refer to [**here**](https://github.com/talbaram3192/Emotion_Recognition)
 
@@ -37,8 +38,6 @@ To run the app
 Example of an execution:
 
 You can try the app [here](https://khanhphantt-speed-emotion-classification-app-b38u5z.streamlitapp.com/)
-![Alt Text](demo2.gif)
-
 
 ## License
 [MIT License](http://www.opensource.org/licenses/MIT).
